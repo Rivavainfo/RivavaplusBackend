@@ -9,22 +9,23 @@ class SecretKeyController {
    */
   static async redeemKey(req, res, next) {
     try {
-      const { secretKey } = req.body;
+      const { secretKey, userPhone, phone } = req.body;
       const userId = req.user?.uid || req.body.userId;
       const userEmail = req.user?.email || req.body.userEmail;
 
       if (!secretKey) {
-        return res.status(400).json(formatResponse(false, null, 'Secret key is required.'));
+        return res.status(400).json(formatResponse(false, { code: 'EMPTY_KEY' }, 'Secret key is required.'));
       }
 
       if (!userId) {
-        return res.status(401).json(formatResponse(false, null, 'User authentication is required.'));
+        return res.status(401).json(formatResponse(false, { code: 'UNAUTHORIZED' }, 'User authentication is required.'));
       }
 
       const result = await SecretKeyService.verifyAndRedeemKey({
         keyString: secretKey,
         userId,
-        userEmail
+        userEmail,
+        userPhone: userPhone || phone
       });
 
       if (!result.success) {

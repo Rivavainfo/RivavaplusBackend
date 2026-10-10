@@ -7,6 +7,72 @@ const KEY_CHARSET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 
 class SecretKeyService {
   /**
+   * Temporary Feature Flag to switch between temporary formula validation and legacy Firebase key verification.
+   */
+  static USE_TEMPORARY_FORMULA_KEY = true;
+
+  /**
+   * Computes expected temporary secret key based on account details.
+   * Formula: EmailPrefix (2 chars lowercase) + MonthNumber (2 digits) + MobilePrefix (3 digits) + "Riva"
+   */
+  static generateFormulaKey({ email, phone, date = new Date() }) {
+    if (!email || typeof email !== 'string') {
+      return { success: false, code: 'INVALID_EMAIL', message: 'Valid email address is required.' };
+    }
+
+    const emailParts = email.trim().split('@');
+    const localPart = emailParts[0] || '';
+    if (localPart.length < 2) {
+      return { success: false, code: 'EMAIL_TOO_SHORT', message: 'Account email local part must contain at least 2 characters.' };
+    }
+
+    const emailPrefix = localPart.substring(0, 2).toLowerCase();
+
+    // Month formatting (01 - 12)
+    const monthNum = (date.getMonth() + 1).toString().padStart(2, '0');
+
+    if (!phone || typeof phone !== 'string') {
+      return {
+        success: false,
+        code: 'MISSING_MOBILE_NUMBER',
+        message: 'Please add your mobile number to your profile before unlocking Portfolio.'
+      };
+    }
+
+    // Normalize phone number: remove non-digits
+    let rawDigits = phone.replace(/\D/g, '');
+
+    // Handle Indian country code +91 or 91 prefix when length is 12 digits
+    if (rawDigits.length === 12 && rawDigits.startsWith('91')) {
+      rawDigits = rawDigits.substring(2);
+    } else if (rawDigits.length > 10 && rawDigits.startsWith('91')) {
+      rawDigits = rawDigits.substring(2);
+    }
+
+    if (rawDigits.length < 3) {
+      return {
+        success: false,
+        code: 'MISSING_MOBILE_NUMBER',
+        message: 'Please add your mobile number to your profile before unlocking Portfolio.'
+      };
+    }
+
+    const mobilePrefix = rawDigits.substring(0, 3);
+    const suffix = 'Riva';
+
+    const expectedKey = `${emailPrefix}${monthNum}${mobilePrefix}${suffix}`;
+
+    return {
+      success: true,
+      expectedKey,
+      emailPrefix,
+      monthNum,
+      mobilePrefix,
+      suffix
+    };
+  }
+
+  /**
    * Generate a cryptographically secure license key string.
    */
   static generateRandomKeyString(prefix = 'RIV') {
@@ -128,11 +194,85 @@ class SecretKeyService {
   /**
    * Atomically redeems a secret key and unlocks user in Firebase Firestore.
    */
-  static async redeemSecretKey({ keyString, userId, userEmail = null }) {
-    if (!keyString || !userId) {
-      return { success: false, code: 'INVALID_REQUEST', message: 'Key and User ID are required.' };
+  static async redeemSecretKey({ keyString, userId, userEmail = null, userPhone = null }) {
+    if (!keyString || !keyString.trim()) {
+      return { success: false, code: 'EMPTY_KEY', message: 'Secret key is required.' };
     }
 
+    if (!userId) {
+      return { success: false, code: 'UNAUTHORIZED', message: 'User ID is required.' };
+    }
+
+    if (this.USE_TEMPORARY_FORMULA_KEY) {
+      return this.redeemFormulaSecretKey({ keyString, userId, userEmail, userPhone });
+    }
+
+    return this.redeemSecretKeyFirebaseLegacy({ keyString, userId, userEmail });
+  }
+
+  /**
+   * Temporary formula secret key redemption logic.
+   */
+  static async redeemFormulaSecretKey({ keyString, userId, userEmail = null, userPhone = null }) {
+    const UserService = require('./user.service');
+    let email = userEmail;
+    let phone = userPhone;
+
+    if (!email || !phone) {
+      try {
+        const profile = await UserService.getProfile(userId);
+        email = email || profile.email;
+        phone = phone || profile.phone;
+      } catch (err) {
+        logger.warn(`Could not fetch profile for temporary key check: ${err.message}`);
+      }
+    }
+
+    const keyCalculation = this.generateFormulaKey({ email, phone });
+    if (!keyCalculation.success) {
+      return {
+        success: false,
+        code: keyCalculation.code,
+        message: keyCalculation.message
+      };
+    }
+
+    const cleanInputKey = keyString.trim();
+
+    if (cleanInputKey !== keyCalculation.expectedKey) {
+      return {
+        success: false,
+        code: 'INVALID_SECRET_KEY',
+        message: 'Invalid Secret Key.'
+      };
+    }
+
+    // Key is correct - update local Portfolio unlock state in user profile in therivdata
+    const now = Date.now();
+    try {
+      await admin.firestore().collection('therivdata').doc(userId).set({
+        premiumStatus: true,
+        isPremium: true,
+        premium_source: 'temporary_formula_key',
+        temporaryUnlockedAt: now,
+        updatedAt: now
+      }, { merge: true });
+    } catch (err) {
+      logger.warn(`Firestore update notice for formula key unlock: ${err.message}`);
+    }
+
+    return {
+      success: true,
+      tier: 'portfolio_premium',
+      code: 'SUCCESS',
+      message: 'Secret key verified successfully. Portfolio unlocked!'
+    };
+  }
+
+  /**
+   * Legacy Firebase Firestore secret key redemption transaction logic.
+   */
+  static async redeemSecretKeyFirebaseLegacy({ keyString, userId, userEmail = null }) {
     const normalizedKey = this.normalizeKey(keyString);
     const firestore = admin.firestore();
     const keyRef = firestore.collection('secret_keys').doc(normalizedKey);

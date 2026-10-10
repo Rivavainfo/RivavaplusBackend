@@ -160,6 +160,10 @@ class PaymentService {
    * Server-Side Payment Verification in Firebase Firestore.
    */
   static async verifyPayment({ userId, orderId, paymentId, signature }) {
+    if (!userId || !orderId) {
+      throw ApiError.badRequest('User ID and Order ID are required for payment verification.');
+    }
+
     const assignedPaymentId = paymentId || `pay_${userId.substring(0, 6)}_${Date.now()}`;
     const assignedSignature = signature || this.generateSignature(orderId, assignedPaymentId);
     const now = Date.now();
