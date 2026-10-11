@@ -26,7 +26,7 @@ jobs:
           cache: 'gradle'
 
       - name: Grant Executable Permissions for Gradle Wrapper
-        run: chmod +x gradlew || true
+        run: chmod +x gradlew
 
       - name: Restore Release Keystore (If Secret Provided)
         env:
