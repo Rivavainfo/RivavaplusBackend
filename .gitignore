@@ -51,3 +51,5 @@ data/*.db*
 # OS specific files
 .DS_Store
 Thumbs.db
+.gradle/
+app/build/
