@@ -8,11 +8,55 @@ initFirebase();
 
 class VerificationService {
   /**
+   * Checks if user is an existing registered user who should be grandfathered.
+   */
+  static async isExistingUser(uid, email) {
+    const db = admin.firestore();
+
+    // Check existing profiles in Firestore collections
+    const userDoc = await db.collection('users').doc(uid).get().catch(() => null);
+    const rivDoc = await db.collection('therivdata').doc(uid).get().catch(() => null);
+
+    if ((userDoc && userDoc.exists && userDoc.data().isExistingUser !== false) ||
+        (rivDoc && rivDoc.exists && rivDoc.data().isExistingUser !== false)) {
+      return true;
+    }
+
+    // Check Firebase Auth creation metadata if available
+    try {
+      if (admin && admin.auth) {
+        const userRecord = await admin.auth().getUser(uid).catch(() => null);
+        if (userRecord) {
+          if (userRecord.emailVerified) return true;
+          // Existing Google Sign-In or verified providers skip email verification requirement
+          const isGoogleUser = userRecord.providerData.some(p => p.providerId === 'google.com');
+          if (isGoogleUser) return true;
+        }
+      }
+    } catch (e) {
+      logger.warn(`Firebase Auth user check notice for ${uid}: ${e.message}`);
+    }
+
+    return false;
+  }
+
+  /**
    * Generates and dispatches an email verification token in Firestore.
    */
   static async sendVerificationEmail(uid, email) {
     if (!uid || !email) {
       throw ApiError.badRequest('Missing email or user ID.');
+    }
+
+    // Existing registered users must not be sent verification emails
+    const existing = await this.isExistingUser(uid, email);
+    if (existing) {
+      logger.info(`Skipping verification email for existing user ${email} (UID: ${uid})`);
+      return {
+        success: true,
+        isExistingUser: true,
+        message: 'Existing user verified without requiring email verification.'
+      };
     }
 
     const db = admin.firestore();
