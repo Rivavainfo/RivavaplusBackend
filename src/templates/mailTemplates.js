@@ -114,7 +114,7 @@ const getVerificationEmailHtml = (email, verifyLink) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your Email - Rivava</title>
+    <title>Welcome to Rivava — Verify Your Email</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: ${BRAND_BG}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #334155;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: ${BRAND_BG}; padding: 40px 15px;">
@@ -126,32 +126,37 @@ const getVerificationEmailHtml = (email, verifyLink) => {
                             <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">
                                 Rivava <span style="color: #38BDF8;">TrackFi</span>
                             </h1>
+                            <p style="margin: 6px 0 0 0; color: #94A3B8; font-size: 14px;">India's First Finance Research Hub</p>
                         </td>
                     </tr>
                     <tr>
                         <td style="padding: 36px 30px;">
-                            <h2 style="margin: 0 0 16px 0; color: #0F172A; font-size: 22px; font-weight: 700;">Verify your email address</h2>
+                            <h2 style="margin: 0 0 16px 0; color: #0F172A; font-size: 22px; font-weight: 700;">Welcome to Rivava!</h2>
+                            <p style="margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #38BDF8;">India's First Finance Research Hub.</p>
                             <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #475569;">
-                                Please confirm your email address (<strong style="color: #0F172A;">${email}</strong>) to complete your registration and activate your account.
+                                Thank you for creating your Rivava account (<strong style="color: #0F172A;">${email}</strong>).
+                            </p>
+                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #475569;">
+                                To activate your account and begin your journey, please verify your email address by clicking the button below.
                             </p>
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
-                                    <td align="center" style="padding: 20px 0 25px 0;">
+                                    <td align="center" style="padding: 10px 0 25px 0;">
                                         <a href="${verifyLink}" target="_blank" style="display: inline-block; background-color: #2563EB; color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
-                                            Confirm Email Address
+                                            Verify Email &amp; Open Rivava
                                         </a>
                                     </td>
                                 </tr>
                             </table>
-                            <p style="margin: 0 0 12px 0; font-size: 14px; color: #64748B; line-height: 1.5;">
-                                This link will expire in <strong>15 minutes</strong>. If the button above doesn't work, copy and paste this link into your browser:
+                            <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Once your email is verified, you'll be redirected to the Rivava application to complete your onboarding.
                             </p>
-                            <p style="margin: 0 0 20px 0; font-size: 13px; color: #2563EB; word-break: break-all;">
-                                <a href="${verifyLink}" style="color: #2563EB;">${verifyLink}</a>
+                            <p style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #0F172A;">
+                                Welcome aboard!
                             </p>
-                            <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 24px 0;" />
-                            <p style="margin: 0; font-size: 13px; color: #94A3B8; line-height: 1.5;">
-                                If you did not create a Rivava account, you can safely ignore this email.
+                            <p style="margin: 0; font-size: 15px; color: #475569; font-weight: 600;">
+                                Team Rivava<br/>
+                                <span style="font-size: 13px; font-weight: 400; color: #64748B;">Rivava — India's First Finance Research Hub</span>
                             </p>
                         </td>
                     </tr>
@@ -169,19 +174,22 @@ const getVerificationEmailHtml = (email, verifyLink) => {
 };
 
 const getVerificationEmailText = (email, verifyLink) => {
-    return `Verify your email for Rivava TrackFi
+    return `Welcome to Rivava!
 
-Please confirm your email address (${email}) to complete your registration by visiting the link below:
+India's First Finance Research Hub.
+
+Thank you for creating your Rivava account (${email}).
+
+To activate your account and begin your journey, please verify your email address by clicking the button below:
 
 ${verifyLink}
 
-This link is valid for 15 minutes.
+Once your email is verified, you'll be redirected to the Rivava application to complete your onboarding.
 
-If you didn't create an account, you can safely ignore this email.
+Welcome aboard!
 
-Best regards,
-The Rivava Team
-© ${new Date().getFullYear()} Rivava Universal`;
+Team Rivava
+Rivava — India's First Finance Research Hub`;
 };
 
 const getLoginNotificationEmailHtml = (email, name = '', details = {}) => {
@@ -419,4 +427,4 @@ module.exports = {
     getPasswordResetEmailText,
     getOtpEmailHtml,
     getOtpEmailText
-};
+};

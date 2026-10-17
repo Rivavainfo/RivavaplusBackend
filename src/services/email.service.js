@@ -100,7 +100,7 @@ class EmailService {
     if (!email || !verifyLink) return false;
     return this.sendMailInternal({
       to: email,
-      subject: 'Verify your email for Rivava TrackFi',
+      subject: 'Welcome to Rivava — Verify Your Email',
       text: getVerificationEmailText(email, verifyLink),
       html: getVerificationEmailHtml(email, verifyLink)
     });
